@@ -622,6 +622,9 @@ class rcube_sieve_engine
             $varnames       = rcube_utils::get_input_value('_action_varname', rcube_utils::INPUT_POST);
             $varvalues      = rcube_utils::get_input_value('_action_varvalue', rcube_utils::INPUT_POST);
             $varmods        = rcube_utils::get_input_value('_action_varmods', rcube_utils::INPUT_POST);
+            $pipecommand    = rcube_utils::get_input_value('_action_pipecommand', rcube_utils::INPUT_POST);
+            $pipeargs       = rcube_utils::get_input_value('_action_pipeargs', rcube_utils::INPUT_POST);
+            $pipemods       = rcube_utils::get_input_value('_action_pipemods', rcube_utils::INPUT_POST);
             $notifymethods  = rcube_utils::get_input_value('_action_notifymethod', rcube_utils::INPUT_POST);
             $notifytargets  = rcube_utils::get_input_value('_action_notifytarget', rcube_utils::INPUT_POST, true);
             $notifyoptions  = rcube_utils::get_input_value('_action_notifyoption', rcube_utils::INPUT_POST, true);
@@ -1052,6 +1055,20 @@ class rcube_sieve_engine
                     $this->form['actions'][$i]['message']    = $notifymessages[$idx];
                     $this->form['actions'][$i]['from']       = $notifyfrom[$idx];
                     $this->form['actions'][$i]['importance'] = $notifyimp[$idx];
+                    break;
+
+                case 'pipe':
+                    $this->form['actions'][$i]['pipecommand'] = $pipecommand[$idx];
+                    $this->form['actions'][$i]['pipeargs'] = $pipeargs[$idx];
+                    foreach ((array)$pipemods[$idx] as $v_m) {
+                        $this->form['actions'][$i][$v_m] = true;
+                    }
+                    if (empty($pipecommand[$idx])) {
+                        $this->errors['actions'][$i]['pipecommand'] = $this->gettext('cannotbeempty');
+                    }
+                    else if (preg_match('/\//i', $pipecommand[$idx])) {
+                        $this->errors['actions'][$i]['pipecommand'] = $this->gettext('forbiddenchars');
+                    }
                     break;
                 }
 
@@ -1728,6 +1745,9 @@ class rcube_sieve_engine
         if (in_array('variables', $this->exts)) {
             $select_action->add(rcube::Q($this->plugin->gettext('setvariable')), 'set');
         }
+        if (in_array('vnd.dovecot.pipe', $this->exts)) {
+            $select_action->add(rcube::Q($this->plugin->gettext('messagepipe')), 'pipe');
+        }
         if (in_array('enotify', $this->exts) || in_array('notify', $this->exts)) {
             $select_action->add(rcube::Q($this->plugin->gettext('notify')), 'notify');
         }
@@ -1895,6 +1915,31 @@ class rcube_sieve_engine
         foreach ($importance_options as $io_v => $io_n) {
             $select_importance->add(rcube::Q($this->plugin->gettext($io_n)), $io_v);
         }
+
+        // pipe
+        $pipeset_modifiers = array(
+            'pipecopy',
+            'pipetry'
+        );
+	echo print_r($action);
+        $out .= '<div id="action_pipe' .$id.'" style="display:' .($action['type']=='pipe' ? 'inline' : 'none') .'">';
+        $out .= '<span class="label">' .rcube::Q($this->plugin->gettext('setpipecommand')) . '</span><br />'
+            .'<input type="text" name="_action_pipecommand['.$id.']" id="action_pipecommand'.$id.'" '
+            .'value="' . rcube::Q($action['pipecommand']) . '" size="60" '
+            . $this->error_class($id, 'action', 'pipecommand', 'action_pipecommand') .' />';
+        $out .= '<br /><span class="label">' .rcube::Q($this->plugin->gettext('setpipeargs')) . '</span><br />'
+            .'<input type="text" name="_action_pipeargs['.$id.']" id="action_pipeargs'.$id.'" '
+            .'value="' . rcube::Q($action['pipeargs']) . '" size="60" placeholder="arg1, arg2, ${variable}, ..." '
+            . $this->error_class($id, 'action', 'pipeargs', 'action_pipeargs') .' />';
+        $out .= '<br /><span class="label">' .rcube::Q($this->plugin->gettext('setpipeoptions')) . '</span><br />';
+        foreach ($pipeset_modifiers as $j => $s_m) {
+            $s_m_id = 'action_pipemods' . $id . $s_m;
+            $out .= sprintf('<input type="checkbox" name="_action_pipemods[%s][]" value="%s" id="%s"%s />%s<br>',
+                $id, $s_m, $s_m_id,
+                (array_key_exists($s_m, (array)$action) && $action[$s_m] ? ' checked="checked"' : ''),
+                Q($this->plugin->gettext('pipemod_' . $s_m)));
+        }
+        $out .= '</div>';
 
         // @TODO: nice UI for mailto: (other methods too) URI parameters
         $out .= '<div id="action_notify' .$id.'" style="display:' .($action['type'] == 'notify' ? 'inline' : 'none') .'">';

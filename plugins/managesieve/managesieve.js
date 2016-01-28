@@ -694,7 +694,8 @@ function action_type_select(id)
       flags: document.getElementById('action_flags' + id),
       vacation: document.getElementById('action_vacation' + id),
       set: document.getElementById('action_set' + id),
-      notify: document.getElementById('action_notify' + id)
+      notify: document.getElementById('action_notify' + id),
+      pipe: document.getElementById('action_pipe' + id)
     };
 
   if (v == 'fileinto' || v == 'fileinto_copy') {
@@ -718,7 +719,9 @@ function action_type_select(id)
   else if (v == 'notify') {
     enabled.notify = 1;
   }
-
+  else if (obj.value == 'pipe') {
+    enabled.pipe = 1;
+  }
   for (var x in elems) {
     elems[x].style.display = !enabled[x] ? 'none' : 'inline';
   }

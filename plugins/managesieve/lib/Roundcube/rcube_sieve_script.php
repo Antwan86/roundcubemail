@@ -46,6 +46,7 @@ class rcube_sieve_script
         'vacation',                 // RFC5230
         'vacation-seconds',         // RFC6131
         'variables',                // RFC5229
+        'vnd.dovecot.pipe',         // draft
         // @TODO: spamtest+virustest, mailbox
     );
 
@@ -396,6 +397,17 @@ class rcube_sieve_script
                             $action_script .= ":$opt ";
                         }
                         $action_script .= self::escape_string($action['target']);
+                        break;
+
+                    case 'pipe':
+                        array_push($exts, 'pipe');
+                        $action_script .= 'pipe ';
+                        if (self::escape_string($action['pipeargs']) != "")
+                            $action_script .= "[ " . self::escape_string($action['pipeargs']) . " ] ";
+                        foreach (array_diff(array_keys($action), array('pipecopy', 'pipetry')) as $opt) {
+                            $action_script .= ":".str_replace("pipe","",$opt)." ";
+                        }
+                        $action_script .= self::escape_string($action['pipecommand']);
                         break;
 
                     case 'set':
@@ -839,6 +851,29 @@ class rcube_sieve_script
                 $action += $this->action_arguments($tokens, $args);
 
                 $result[] = $action;
+                break;
+
+            case 'pipe':
+                $pipe = array('type' => 'pipe');
+		$command = array_pop($tokens);
+		if (is_array($command))
+			$command = $command[0];
+		$pipe['command'] = $command;
+		$args    = array('copy', 'try');
+		$vargs    = array('copy', 'try');
+                $pipe += $this->action_arguments($tokens, $args);
+		$pipe['args'] = $tokens[0];
+                /*// Parameters: :copy :try
+                for ($i=0, $len=count($tokens); $i<$len; $i++) {
+                    $tok = strtolower($tokens[$i]);
+                    if ($tok[0] == ':') {
+                        if ($tok != ":args")
+                            $pipe[substr($tok, 1)] = true;
+                        else
+                            $pipe['args'] = $tokens[++$i];
+                    }
+                }*/
+                $result[] = $pipe;
                 break;
 
             case 'set':
