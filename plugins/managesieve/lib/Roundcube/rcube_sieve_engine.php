@@ -1064,10 +1064,10 @@ class rcube_sieve_engine
                         $this->form['actions'][$i][$v_m] = true;
                     }
                     if (empty($pipecommand[$idx])) {
-                        $this->errors['actions'][$i]['pipecommand'] = $this->gettext('cannotbeempty');
+                        $this->errors['actions'][$i]['pipecommand'] = $this->plugin->gettext('cannotbeempty');
                     }
                     else if (preg_match('/\//i', $pipecommand[$idx])) {
-                        $this->errors['actions'][$i]['pipecommand'] = $this->gettext('forbiddenchars');
+                        $this->errors['actions'][$i]['pipecommand'] = $this->plugin->gettext('forbiddenchars');
                     }
                     break;
                 }
@@ -1921,7 +1921,6 @@ class rcube_sieve_engine
             'pipecopy',
             'pipetry'
         );
-	echo print_r($action);
         $out .= '<div id="action_pipe' .$id.'" style="display:' .($action['type']=='pipe' ? 'inline' : 'none') .'">';
         $out .= '<span class="label">' .rcube::Q($this->plugin->gettext('setpipecommand')) . '</span><br />'
             .'<input type="text" name="_action_pipecommand['.$id.']" id="action_pipecommand'.$id.'" '
@@ -1934,7 +1933,7 @@ class rcube_sieve_engine
         $out .= '<br /><span class="label">' .rcube::Q($this->plugin->gettext('setpipeoptions')) . '</span><br />';
         foreach ($pipeset_modifiers as $j => $s_m) {
             $s_m_id = 'action_pipemods' . $id . $s_m;
-            $out .= sprintf('<input type="checkbox" name="_action_pipemods[%s][]" value="%s" id="%s"%s />%s<br>',
+            $out .= sprintf('<label><input type="checkbox" name="_action_pipemods[%s][]" value="%s" id="%s"%s />%s</label><br>',
                 $id, $s_m, $s_m_id,
                 (array_key_exists($s_m, (array)$action) && $action[$s_m] ? ' checked="checked"' : ''),
                 Q($this->plugin->gettext('pipemod_' . $s_m)));

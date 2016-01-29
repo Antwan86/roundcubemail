@@ -400,14 +400,14 @@ class rcube_sieve_script
                         break;
 
                     case 'pipe':
-                        array_push($exts, 'pipe');
+                        array_push($exts, 'vnd.dovecot.pipe');
                         $action_script .= 'pipe ';
-                        if (self::escape_string($action['pipeargs']) != "")
-                            $action_script .= "[ " . self::escape_string($action['pipeargs']) . " ] ";
-                        foreach (array_diff(array_keys($action), array('pipecopy', 'pipetry')) as $opt) {
-                            $action_script .= ":".str_replace("pipe","",$opt)." ";
+                        foreach (array_intersect(array_keys($action), array('pipecopy', 'pipetry')) as $opt) {
+                            $action_script .= ":".str_replace("pipe", "", $opt)." ";
                         }
                         $action_script .= self::escape_string($action['pipecommand']);
+                        if ($action['pipeargs'] != "")
+                            $action_script .= ' ' . self::escape_string(explode(',', str_replace(', ', ',', $action['pipeargs'])));
                         break;
 
                     case 'set':
@@ -512,7 +512,6 @@ class rcube_sieve_script
         if (!empty($this->prefix)) {
             $output = $this->prefix . "\n\n" . $output;
         }
-
         return $output;
     }
 
@@ -855,24 +854,14 @@ class rcube_sieve_script
 
             case 'pipe':
                 $pipe = array('type' => 'pipe');
-		$command = array_pop($tokens);
-		if (is_array($command))
-			$command = $command[0];
-		$pipe['command'] = $command;
-		$args    = array('copy', 'try');
-		$vargs    = array('copy', 'try');
-                $pipe += $this->action_arguments($tokens, $args);
-		$pipe['args'] = $tokens[0];
-                /*// Parameters: :copy :try
-                for ($i=0, $len=count($tokens); $i<$len; $i++) {
-                    $tok = strtolower($tokens[$i]);
-                    if ($tok[0] == ':') {
-                        if ($tok != ":args")
-                            $pipe[substr($tok, 1)] = true;
-                        else
-                            $pipe['args'] = $tokens[++$i];
-                    }
-                }*/
+		$args = array('copy', 'try');
+                $mods = $this->action_arguments($tokens, $args);
+		foreach( $mods as $mod => $v ){
+			$pipe["pipe$mod"] = $v;
+		}
+		$pipe['pipecommand'] = array_shift($tokens);
+		$args = array_shift($tokens);
+		$pipe['pipeargs'] = is_array($args) ? join(', ', $args) : '';
                 $result[] = $pipe;
                 break;
 
